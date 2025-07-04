@@ -3,7 +3,13 @@ import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+// const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+
+// Determine SSL requirement based on environment
+const sslConfig = process.env.NODE_ENV === 'production' ? { ssl: 'require' } : { ssl: false };
+
+// Use DATABASE_URL for consistency, which should now come from .env.local for local dev
+const sql = postgres(process.env.DATABASE_URL!, sslConfig);
 
 async function seedUsers() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
@@ -104,15 +110,36 @@ async function seedRevenue() {
 
 export async function GET() {
   try {
-    const result = await sql.begin((sql) => [
-      seedUsers(),
-      seedCustomers(),
-      seedInvoices(),
-      seedRevenue(),
-    ]);
+    console.log('Starting database seeding via API route...'); // Add this
+    const result = await sql.begin(async (sql) => { // Make the transaction callback async
+      await seedUsers();
+      await seedCustomers();
+      await seedInvoices();
+      await seedRevenue();
+    });
 
+    console.log('Database seeded successfully!'); // Add this
     return Response.json({ message: 'Database seeded successfully' });
-  } catch (error) {
-    return Response.json({ error }, { status: 500 });
+  } catch (error: any) { // Explicitly type error as 'any' for easier logging
+    console.error('Error during database seeding:', error); // Log the full error
+    if (error.code) { // Check for specific postgres.js error codes
+      console.error('Postgres Error Code:', error.code);
+      console.error('Postgres Error Message:', error.message);
+      if (error.detail) {
+        console.error('Postgres Error Detail:', error.detail);
+      }
+      if (error.hint) {
+        console.error('Postgres Error Hint:', error.hint);
+      }
+    }
+    return Response.json({ error: error.message || 'An unknown error occurred during seeding' }, { status: 500 });
+  } finally {
+    // It's generally good practice to disconnect the client when done,
+    // especially if this is a long-lived process or not managed by a connection pool.
+    // However, for a Next.js API route, the client might be reused.
+    // If you see "Client has already been released" errors, remove this.
+    // If you have a global postgres client, manage its lifecycle carefully.
+    // For a simple seed, it might be okay to let it close with the request.
+    // await sql.end(); // Uncomment if you manage connection lifecycle here
   }
 }
