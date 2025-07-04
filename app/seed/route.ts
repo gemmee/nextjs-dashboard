@@ -5,10 +5,13 @@ import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 
 // const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
-// Determine SSL requirement based on environment
-const sslConfig = process.env.NODE_ENV === 'production' ? { ssl: 'require' } : { ssl: false };
+const sslConfig = {
+  ssl: {
+    rejectUnauthorized: false, // Crucial for local dev to Supabase
+  },
+};
 
-// Use DATABASE_URL for consistency, which should now come from .env.local for local dev
+// Use DATABASE_URL, which now points to your new Supabase project
 const sql = postgres(process.env.DATABASE_URL!, sslConfig);
 
 async function seedUsers() {

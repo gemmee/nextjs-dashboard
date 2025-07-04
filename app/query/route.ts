@@ -3,9 +3,13 @@ import postgres from 'postgres';
 
 // Determine SSL requirement based on environment
 // For local development, ssl: false is typically needed if your local Postgres isn't configured for SSL
-const sslConfig = process.env.NODE_ENV === 'production' ? { ssl: 'require' } : { ssl: false };
+const sslConfig = {
+  ssl: {
+    rejectUnauthorized: false, // Crucial for local dev to Supabase
+  },
+};
 
-// Use DATABASE_URL from your .env.local, and apply the correct SSL config
+// Use DATABASE_URL, which now points to your new Supabase project
 const sql = postgres(process.env.DATABASE_URL!, sslConfig);
 
 async function listInvoices() {
