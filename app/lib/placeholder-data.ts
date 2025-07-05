@@ -46,6 +46,12 @@ const customers = [
     email: 'balazs@orban.com',
     image_url: '/customers/balazs-orban.png',
   },
+  {
+    id: 'AAD07535-C59E-4157-A011-F8D2EF4E0CAA',
+    name: 'Gamachu Abara',
+    email: 'gamachu@ethio.com',
+    image_url: '/customers/gamachu.png',
+  },
 ];
 
 const invoices = [
